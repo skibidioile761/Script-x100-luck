@@ -84,7 +84,7 @@ percentLabel.Parent = loadingFrame
 ----------------------------------------------------------------
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainMenu"
-mainFrame.Size = UDim2.new(0, 300, 0, 230)
+mainFrame.Size = UDim2.new(0, 300, 0, 240)
 mainFrame.Position = UDim2.new(0.5, -150, 0.15, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 20, 28)
 mainFrame.BackgroundTransparency = 0.25
@@ -116,17 +116,28 @@ title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = header
 
+-- Nút đóng: dùng ký tự "×" (dấu nhân) thay vì "✕" để tránh lỗi hiển thị ô vuông
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 26, 0, 26)
-closeBtn.Position = UDim2.new(1, -36, 0, 9)
+closeBtn.Size = UDim2.new(0, 28, 0, 28)
+closeBtn.Position = UDim2.new(1, -38, 0, 8)
 closeBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
 closeBtn.BackgroundTransparency = 0.85
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.fromRGB(255, 140, 140)
+closeBtn.Text = "×"
+closeBtn.TextColor3 = Color3.fromRGB(255, 150, 150)
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 14
+closeBtn.TextSize = 22
+closeBtn.TextYAlignment = Enum.TextYAlignment.Center
+closeBtn.AutoButtonColor = false
 closeBtn.Parent = header
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
+
+-- Hiệu ứng hover cho nút đóng (đổi màu nền khi rê chuột / chạm)
+closeBtn.MouseEnter:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.6}):Play()
+end)
+closeBtn.MouseLeave:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.85}):Play()
+end)
 
 -- Toggle Row
 local toggleRow = Instance.new("Frame")
@@ -153,6 +164,7 @@ switchBg.Size = UDim2.new(0, 48, 0, 26)
 switchBg.Position = UDim2.new(1, -60, 0.5, -13)
 switchBg.BackgroundColor3 = Color3.fromRGB(43, 47, 58)
 switchBg.Text = ""
+switchBg.AutoButtonColor = false
 switchBg.Parent = toggleRow
 Instance.new("UICorner", switchBg).CornerRadius = UDim.new(1, 0)
 
@@ -165,10 +177,11 @@ Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
 
 -- Status / Effect Zone
 local statusZone = Instance.new("Frame")
-statusZone.Size = UDim2.new(1, -28, 0, 100)
+statusZone.Size = UDim2.new(1, -28, 0, 110)
 statusZone.Position = UDim2.new(0, 14, 0, 108)
 statusZone.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 statusZone.BackgroundTransparency = 0.8
+statusZone.ClipsDescendants = true
 statusZone.Parent = mainFrame
 Instance.new("UICorner", statusZone).CornerRadius = UDim.new(0, 14)
 
@@ -190,13 +203,15 @@ statusText.TextSize = 13
 statusText.TextColor3 = Color3.fromRGB(136, 136, 136)
 statusText.Parent = statusZone
 
+-- Ô hiển thị thông báo Boost (đã bỏ random tên, thay bằng câu cố định)
 local fruitText = Instance.new("TextLabel")
-fruitText.Size = UDim2.new(1, 0, 0, 16)
-fruitText.Position = UDim2.new(0, 0, 0, 78)
+fruitText.Size = UDim2.new(1, -16, 0, 30)
+fruitText.Position = UDim2.new(0, 8, 0, 78)
 fruitText.BackgroundTransparency = 1
 fruitText.Text = ""
 fruitText.Font = Enum.Font.Gotham
 fruitText.TextSize = 11
+fruitText.TextWrapped = true
 fruitText.TextColor3 = Color3.fromRGB(201, 168, 255)
 fruitText.Parent = statusZone
 
@@ -261,16 +276,11 @@ local function makeDraggable(frame, handle)
 end
 
 ----------------------------------------------------------------
--- MODULE 5: VISUAL EFFECT (particles + random tên tự đặt)
+-- MODULE 5: VISUAL EFFECT (particles + thông báo cố định)
 ----------------------------------------------------------------
-local demoFruits = {
-	"Ánh Sáng Huyền Bí", "Bóng Tối Vĩnh Cửu", "Rồng Cổ Đại",
-	"Sấm Sét Ngàn Năm", "Băng Giá Vĩnh Hằng", "Lửa Thiêng",
-	"Pha Lê Huyền Thoại", "Gió Vô Hình"
-}
-
 local effectRunning = false
-local coreGlowTween
+
+local BOOST_MESSAGE = "🍀 Bạn đã được Boost 100% Luck cho lần roll tiếp theo"
 
 local function spawnParticle()
 	local p = Instance.new("Frame")
@@ -289,34 +299,21 @@ local function spawnParticle()
 	tween.Completed:Connect(function() p:Destroy() end)
 end
 
-local function showRandomFruit()
-	local name = demoFruits[math.random(1, #demoFruits)]
-	fruitText.Text = "🍇 " .. name .. " (mô phỏng)"
-end
-
-local particleLoop, fruitLoop
+local particleLoop
 
 local function startEffect()
 	effectRunning = true
 	statusText.Text = "Boost Luck: ON"
 	statusText.TextColor3 = Color3.fromRGB(124, 252, 0)
 
-	-- Glow pulse animation
 	TweenService:Create(glowCore, TweenInfo.new(0.4), {BackgroundTransparency = 0.2}):Play()
 
-	showRandomFruit()
+	fruitText.Text = BOOST_MESSAGE
 
 	particleLoop = task.spawn(function()
 		while effectRunning do
 			spawnParticle()
 			task.wait(0.18)
-		end
-	end)
-
-	fruitLoop = task.spawn(function()
-		while effectRunning do
-			task.wait(2.2)
-			if effectRunning then showRandomFruit() end
 		end
 	end)
 end
@@ -358,7 +355,7 @@ switchBg.MouseButton1Click:Connect(toggleSwitch)
 closeBtn.MouseButton1Click:Connect(function()
 	local tween = TweenService:Create(mainFrame, TweenInfo.new(0.3), {
 		BackgroundTransparency = 1,
-		Size = UDim2.new(0, 260, 0, 200)
+		Size = UDim2.new(0, 260, 0, 210)
 	})
 	tween:Play()
 	tween.Completed:Connect(function()
@@ -382,7 +379,6 @@ task.spawn(function()
 
 	local fadeOut = TweenService:Create(loadingFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1})
 	fadeOut:Play()
-	loadTitle.TextTransparency = 0
 	TweenService:Create(loadTitle, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
 	TweenService:Create(percentLabel, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
 	TweenService:Create(barTrack, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
